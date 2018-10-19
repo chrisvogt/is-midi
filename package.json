@@ -1,0 +1,52 @@
+{
+	"name": "is-midi",
+	"version": "1.0.0",
+	"description": "Check if a Buffer/Uint8Array is a MIDI file",
+	"license": "MIT",
+	"repository": "chrisvogt/is-midi",
+	"author": {
+		"name": "Chris Vogt",
+		"email": "mail@chrisvogt.me",
+		"url": "https://www.chrisvogt.me"
+	},
+	"engines": {
+		"node": ">=6"
+	},
+	"scripts": {
+		"test": "xo && nyc ava"
+	},
+	"files": [
+		"index.js"
+	],
+	"keywords": [
+		"mid",
+		"midi",
+		"music",
+		"audio",
+		"type",
+		"detect",
+		"check",
+		"is",
+		"exif",
+		"binary",
+		"buffer",
+		"uint8array"
+	],
+	"dependencies": {},
+	"devDependencies": {
+		"ava": "^0.25.0",
+		"codecov": "^3.0.0",
+		"nyc": "^13.1.0",
+		"read-chunk": "^3.0.0",
+		"xo": "^0.23.0"
+	},
+	"nyc": {
+		"reporter": [
+			"lcov",
+			"text"
+		]
+	},
+	"xo": {
+		"space": true
+	}
+}
