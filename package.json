@@ -34,7 +34,7 @@
 	],
 	"dependencies": {},
 	"devDependencies": {
-		"ava": "^0.25.0",
+		"ava": "^5.1.0",
 		"codecov": "^3.0.0",
 		"nyc": "^13.1.0",
 		"read-chunk": "^3.0.0",
