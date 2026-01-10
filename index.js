@@ -1,12 +1,19 @@
-'use strict';
+/**
+ * Check if a Buffer/Uint8Array is a MIDI file.
+ * MIDI files start with the magic bytes "MThd" (0x4D546864).
+ * @param {Uint8Array} buffer - The buffer to check
+ * @returns {boolean} True if the buffer is a MIDI file
+ */
+export default function isMidi(buffer) {
+	if (!buffer || buffer.length < 4) {
+		return false;
+	}
 
-module.exports = buffer => {
-  if (!buffer || buffer.length < 4) {
-    return false;
-  }
-
-  return buffer[0] === 77 &&
-    buffer[1] === 84 &&
-    buffer[2] === 104 &&
-    buffer[3] === 100;
-};
+	// Check for "MThd" magic bytes
+	return (
+		buffer[0] === 0x4D // M
+		&& buffer[1] === 0x54 // T
+		&& buffer[2] === 0x68 // H
+		&& buffer[3] === 0x64 // D
+	);
+}

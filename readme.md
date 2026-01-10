@@ -1,56 +1,59 @@
-# is-midi [![Build Status](https://travis-ci.org/chrisvogt/is-midi.svg?branch=master)](https://travis-ci.org/chrisvogt/is-midi) [![codecov](https://codecov.io/gh/chrisvogt/is-midi/badge.svg?branch=master)](https://codecov.io/gh/chrisvogt/is-midi?branch=master)
+# is-midi
+
+[![CI](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/is-midi.svg)](https://www.npmjs.com/package/is-midi)
+[![codecov](https://codecov.io/gh/chrisvogt/is-midi/branch/main/graph/badge.svg)](https://codecov.io/gh/chrisvogt/is-midi)
 
 > Check if a Buffer/Uint8Array is a MIDI file
 
-
 ## Install
 
+```sh
+npm install is-midi
 ```
-$ npm install is-midi
-```
-
 
 ## Usage
 
-##### Node.js
+### Node.js
 
 ```js
-const readChunk = require('read-chunk'); // npm install read-chunk
-const isMidi = require('is-midi');
-const buffer = readChunk.sync('song.mid', 0, 4);
+import { readFileSync } from 'node:fs';
+import isMidi from 'is-midi';
 
+const buffer = readFileSync('song.mid');
 isMidi(buffer);
 //=> true
 ```
 
-##### Browser
+### Browser
 
 ```js
-const xhr = new XMLHttpRequest();
-xhr.open('GET', 'song.mid');
-xhr.responseType = 'arraybuffer';
+const response = await fetch('song.mid');
+const buffer = new Uint8Array(await response.arrayBuffer());
 
-xhr.onload = () => {
-	isMidi(new Uint8Array(this.response));
-	//=> true
-};
-
-xhr.send();
+isMidi(buffer);
+//=> true
 ```
 
 ## API
 
 ### isMidi(buffer)
 
-Accepts a Buffer (Node.js) or Uint8Array.
+Returns `true` if the buffer is a MIDI file, `false` otherwise.
 
-It only needs the first 4 bytes.
+#### buffer
 
+Type: `Buffer | Uint8Array`
+
+The buffer to check. It only needs the first 4 bytes.
+
+## How it works
+
+MIDI files start with the magic bytes `MThd` (hex: `4D 54 68 64`). This package checks for those bytes to determine if a file is a MIDI file.
 
 ## Related
 
 - [file-type](https://github.com/sindresorhus/file-type) - Detect the file type of a Buffer/Uint8Array
-
 
 ## License
 
