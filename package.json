@@ -55,5 +55,8 @@
     "rules": {
       "unicorn/prefer-module": "off"
     }
+  },
+  "c8": {
+    "reporter": ["text", "lcov"]
   }
 }
