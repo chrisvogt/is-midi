@@ -1,8 +1,4 @@
-# is-midi
-
-[![CI](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/is-midi.svg)](https://www.npmjs.com/package/is-midi)
-[![codecov](https://codecov.io/gh/chrisvogt/is-midi/branch/main/graph/badge.svg)](https://codecov.io/gh/chrisvogt/is-midi)
+# is-midi [![CI](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvogt/is-midi/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/chrisvogt/is-midi/badge.svg?branch=main)](https://codecov.io/gh/chrisvogt/is-midi?branch=main) [![npm version](https://img.shields.io/npm/v/is-midi.svg)](https://www.npmjs.com/package/is-midi)
 
 > Check if a Buffer/Uint8Array is a MIDI file
 
