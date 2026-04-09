@@ -1,7 +1,7 @@
 {
   "name": "is-midi",
-  "version": "2.0.0",
-  "description": "Check if a Buffer/Uint8Array is a MIDI file",
+  "version": "2.1.0",
+  "description": "Check if a Buffer/Uint8Array is a MIDI file (supports standard MIDI and RIFF MIDI/.rmi)",
   "license": "MIT",
   "repository": "chrisvogt/is-midi",
   "author": {
@@ -44,7 +44,10 @@
     "buffer",
     "uint8array",
     "file-type",
-    "magic-bytes"
+    "magic-bytes",
+    "smf",
+    "rmi",
+    "riff"
   ],
   "devDependencies": {
     "ava": "^6.1.1",
