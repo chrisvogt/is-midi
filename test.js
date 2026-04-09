@@ -3,11 +3,11 @@ import test from 'ava';
 import isMidi from './index.js';
 
 /**
- * Read first 4 bytes of a file
+ * Read first n bytes of a file (default: 12 for RIFF MIDI support)
  */
-function readChunk(filename) {
+function readChunk(filename, size = 12) {
 	const buffer = readFileSync(filename);
-	return buffer.subarray(0, 4);
+	return buffer.subarray(0, size);
 }
 
 test('detects MIDI from Buffer', t => {
@@ -41,4 +41,57 @@ test('works with Uint8Array', t => {
 test('rejects similar but incorrect magic bytes', t => {
 	const notMidi = new Uint8Array([0x4D, 0x54, 0x68, 0x65]); // "MThe" not "MThd"
 	t.false(isMidi(notMidi));
+});
+
+test('detects RIFF MIDI (.rmi) from Buffer', t => {
+	t.true(isMidi(readChunk('fixture.rmi')));
+});
+
+test('works with Uint8Array for RIFF MIDI', t => {
+	// "RIFF" + 4 size bytes + "RMID"
+	const rmiHeader = new Uint8Array([
+		0x52,
+		0x49,
+		0x46,
+		0x46,
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+		0x52,
+		0x4D,
+		0x49,
+		0x44,
+	]);
+	t.true(isMidi(rmiHeader));
+});
+
+test('rejects RIFF file that is not MIDI', t => {
+	const riffWav = new Uint8Array([
+		0x52,
+		0x49,
+		0x46,
+		0x46,
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+		0x57,
+		0x41,
+		0x56,
+		0x45,
+	]);
+	t.false(isMidi(riffWav));
+});
+
+test('rejects RIFF header too short for RMID check', t => {
+	const shortRiff = new Uint8Array([
+		0x52,
+		0x49,
+		0x46,
+		0x46,
+		0x00,
+		0x00,
+	]);
+	t.false(isMidi(shortRiff));
 });
