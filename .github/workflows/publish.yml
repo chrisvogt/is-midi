@@ -131,14 +131,18 @@ jobs:
 
       - run: npm ci
 
+      # npm does not apply NODE_AUTH_TOKEN to GitHub Packages by itself; it needs a
+      # userconfig with //npm.pkg.github.com/:_authToken (setup-node’s registry-url
+      # would add that but would also send @owner/* installs to GitHub and break npm ci).
       - name: Publish scoped package to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
           GITHUB_PKG_NAME: ${{ needs.resolve-version.outputs.github_pkg_name }}
         run: |
           set -euo pipefail
+          printf '%s\n' "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > "${RUNNER_TEMP}/npmrc-gh-publish"
           cp package.json package.json.ci-backup
           npm pkg set "name=${GITHUB_PKG_NAME}"
           npm pkg set publishConfig.registry=https://npm.pkg.github.com
-          npm publish --registry https://npm.pkg.github.com
+          npm publish --registry https://npm.pkg.github.com --userconfig "${RUNNER_TEMP}/npmrc-gh-publish"
           mv package.json.ci-backup package.json
