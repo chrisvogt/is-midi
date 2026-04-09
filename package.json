@@ -3,7 +3,10 @@
   "version": "2.1.0",
   "description": "Check if a Buffer/Uint8Array is a MIDI file (supports standard MIDI and RIFF MIDI/.rmi)",
   "license": "MIT",
-  "repository": "chrisvogt/is-midi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrisvogt/is-midi.git"
+  },
   "author": {
     "name": "Chris Vogt",
     "email": "mail@chrisvogt.me",
