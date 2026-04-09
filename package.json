@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chrisvogt/is-midi.git"
+    "url": "git+https://github.com/chrisvogt/is-midi.git"
   },
   "author": {
     "name": "Chris Vogt",

@@ -1,8 +1,7 @@
 name: Publish
 
-# Publishes to npm and GitHub Packages when the version in package.json is not
-# already present on each registry. (npm rejects duplicate versions, but this
-# keeps the workflow green on normal merges.)
+# Publishes to npm and GitHub Packages when the package version in package.json is not
+# already on each registry.
 
 on:
   push:
@@ -13,26 +12,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  test:
+    name: Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
-    # If you enter an Environment name on npm’s trusted publisher form, create the
-    # same environment under Repo → Settings → Environments and set it here so OIDC
-    # claims match (mismatch often shows up as auth errors on publish).
-    # environment: npm
-    permissions:
-      contents: read
-      id-token: write
-      packages: write
+
+    strategy:
+      matrix:
+        node-version: [18, 20, 22, 24]
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Use Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
           cache: npm
-          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -40,10 +35,36 @@ jobs:
 
       - run: npm run test:coverage
 
-      - name: Resolve registries and local version
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == 24
+        uses: codecov/codecov-action@v5
+
+  resolve-version:
+    name: Resolve publish targets
+    runs-on: ubuntu-latest
+    needs: test
+
+    outputs:
+      publish_npm: ${{ steps.meta.outputs.publish_npm }}
+      publish_github: ${{ steps.meta.outputs.publish_github }}
+      github_pkg_name: ${{ steps.meta.outputs.github_pkg_name }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      # GitHub Packages requires auth for npm view. Use a dedicated userconfig file only
+      # for those lookups. Never append //npm.pkg.github.com/ to the default .npmrc:
+      # setup-node merges that with registry.npmjs.org and breaks OIDC npm publish
+      # (registry URL becomes mangled; ENEEDAUTH).
+      - name: Compare local version to registries
         id: meta
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           OWNER_LC=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
@@ -52,13 +73,12 @@ jobs:
           GH_PKG_NAME="@${OWNER_LC}/${BASE_NAME}"
           LOCAL=$(node -p "require('./package.json').version")
 
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          printf '%s\n' "//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}" > "${RUNNER_TEMP}/npmrc-github-packages"
 
           NPM_REMOTE=$(npm view "${NPM_NAME}" version 2>/dev/null || true)
-          GH_REMOTE=$(npm view "${GH_PKG_NAME}" version --registry https://npm.pkg.github.com 2>/dev/null || true)
+          GH_REMOTE=$(npm view "${GH_PKG_NAME}" version --registry https://npm.pkg.github.com --userconfig "${RUNNER_TEMP}/npmrc-github-packages" 2>/dev/null || true)
 
           echo "local_version=${LOCAL}" >> "${GITHUB_OUTPUT}"
-          echo "npm_name=${NPM_NAME}" >> "${GITHUB_OUTPUT}"
           echo "github_pkg_name=${GH_PKG_NAME}" >> "${GITHUB_OUTPUT}"
 
           if [ "${LOCAL}" = "${NPM_REMOTE}" ]; then
@@ -77,20 +97,58 @@ jobs:
             echo "GitHub Packages: will publish ${GH_PKG_NAME}@${LOCAL} (registry latest: ${GH_REMOTE:-none})"
           fi
 
-      # Publishes with npm trusted publishing (OIDC). Requires the trusted publisher
-      # configured on npmjs.com for this workflow file and repo. No NPM_TOKEN secret.
-      - name: Publish to npm
-        if: steps.meta.outputs.publish_npm == 'true'
+  publish-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: resolve-version
+    if: needs.resolve-version.outputs.publish_npm == 'true'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Publish to npm (trusted publishing / OIDC)
         run: npm publish --access public
 
-      - name: Publish to GitHub Packages
-        if: steps.meta.outputs.publish_github == 'true'
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    needs: resolve-version
+    if: needs.resolve-version.outputs.publish_github == 'true'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Publish scoped package to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PKG_NAME: ${{ needs.resolve-version.outputs.github_pkg_name }}
         run: |
           set -euo pipefail
           cp package.json package.json.ci-backup
-          npm pkg set "name=${{ steps.meta.outputs.github_pkg_name }}"
+          npm pkg set "name=${GITHUB_PKG_NAME}"
           npm pkg set publishConfig.registry=https://npm.pkg.github.com
           npm publish --registry https://npm.pkg.github.com
           mv package.json.ci-backup package.json
