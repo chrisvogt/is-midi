@@ -1,0 +1,96 @@
+name: Publish
+
+# Publishes to npm and GitHub Packages when the version in package.json is not
+# already present on each registry. (npm rejects duplicate versions, but this
+# keeps the workflow green on normal merges.)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # If you enter an Environment name on npm’s trusted publisher form, create the
+    # same environment under Repo → Settings → Environments and set it here so OIDC
+    # claims match (mismatch often shows up as auth errors on publish).
+    # environment: npm
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run test:coverage
+
+      - name: Resolve registries and local version
+        id: meta
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          OWNER_LC=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          BASE_NAME=$(node -p "require('./package.json').name.replace(/^@[^/]+\//,'')")
+          NPM_NAME=$(node -p "require('./package.json').name")
+          GH_PKG_NAME="@${OWNER_LC}/${BASE_NAME}"
+          LOCAL=$(node -p "require('./package.json').version")
+
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+
+          NPM_REMOTE=$(npm view "${NPM_NAME}" version 2>/dev/null || true)
+          GH_REMOTE=$(npm view "${GH_PKG_NAME}" version --registry https://npm.pkg.github.com 2>/dev/null || true)
+
+          echo "local_version=${LOCAL}" >> "${GITHUB_OUTPUT}"
+          echo "npm_name=${NPM_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "github_pkg_name=${GH_PKG_NAME}" >> "${GITHUB_OUTPUT}"
+
+          if [ "${LOCAL}" = "${NPM_REMOTE}" ]; then
+            echo "publish_npm=false" >> "${GITHUB_OUTPUT}"
+            echo "npm: ${LOCAL} already published"
+          else
+            echo "publish_npm=true" >> "${GITHUB_OUTPUT}"
+            echo "npm: will publish ${LOCAL} (registry latest: ${NPM_REMOTE:-none})"
+          fi
+
+          if [ "${LOCAL}" = "${GH_REMOTE}" ]; then
+            echo "publish_github=false" >> "${GITHUB_OUTPUT}"
+            echo "GitHub Packages: ${LOCAL} already published"
+          else
+            echo "publish_github=true" >> "${GITHUB_OUTPUT}"
+            echo "GitHub Packages: will publish ${GH_PKG_NAME}@${LOCAL} (registry latest: ${GH_REMOTE:-none})"
+          fi
+
+      # Publishes with npm trusted publishing (OIDC). Requires the trusted publisher
+      # configured on npmjs.com for this workflow file and repo. No NPM_TOKEN secret.
+      - name: Publish to npm
+        if: steps.meta.outputs.publish_npm == 'true'
+        run: npm publish --access public
+
+      - name: Publish to GitHub Packages
+        if: steps.meta.outputs.publish_github == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cp package.json package.json.ci-backup
+          npm pkg set "name=${{ steps.meta.outputs.github_pkg_name }}"
+          npm pkg set publishConfig.registry=https://npm.pkg.github.com
+          npm publish --registry https://npm.pkg.github.com
+          mv package.json.ci-backup package.json
