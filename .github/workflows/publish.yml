@@ -10,8 +10,10 @@ on:
       - completed
     branches: [main]
 
+# Serialize by branch, not by commit: head_sha would give every push its own group and
+# allow parallel publishes that race the same semver (duplicate publish / flaky CI).
 concurrency:
-  group: publish-${{ github.event.workflow_run.head_sha }}
+  group: publish-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
