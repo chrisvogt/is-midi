@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-04-11
+
+### Added
+
+- `sniffMidi()` returns `{ format: 'smf' | 'rmi' }` when the prefix matches, otherwise `undefined`.
+- `isMidiHeaderPlausible()` performs a stricter check (SMF header chunk and track layout; sane RIFF payload size) without reading the whole file.
+- Exported size hints: `MIN_BYTES_SMF`, `MIN_BYTES_RMI`, and `MIN_BYTES_TO_SNIFF`.
+- CLI binary `is-midi` (`--plausible`, `--print`, `--help`), exposed via the `is-midi` package `bin` field.
+
+### Changed
+
+- README documents partial reads, MIME/extensions, integration with `file-type`, and when full parsing is needed.
+
 ## [2.1.2] - 2026-04-10
 
 ### Fixed
