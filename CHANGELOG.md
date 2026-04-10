@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.1] - 2026-04-09
+
+### Fixed
+
+- GitHub Actions publish workflow: set `registry-url` to `https://npm.pkg.github.com` in the GitHub Packages job so `npm publish` receives credentials (`ENEEDAUTH` without it).
+
 ## [2.0.0] - 2026-02-10
 
 ### Breaking Changes
