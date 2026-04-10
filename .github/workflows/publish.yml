@@ -13,24 +13,20 @@ concurrency:
 
 jobs:
   test:
-    name: Node.js ${{ matrix.node-version }}
+    name: Test (Node.js 24)
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      id-token: write # Codecov tokenless / OIDC upload on Node 24
-
-    strategy:
-      matrix:
-        node-version: [18, 20, 22, 24]
+      id-token: write # Codecov tokenless / OIDC upload
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 24
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 24
           cache: npm
 
       - run: npm ci
@@ -40,7 +36,6 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage to Codecov
-        if: matrix.node-version == 24
         uses: codecov/codecov-action@v5
 
   resolve-version:
@@ -129,6 +124,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
+
       - name: Publish to npm (trusted publishing / OIDC)
         run: npm publish --access public
 
@@ -142,6 +140,9 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      NODE_AUTH_TOKEN: ${{ github.token }}
+
     steps:
       - uses: actions/checkout@v6
 
@@ -149,18 +150,18 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          registry-url: https://npm.pkg.github.com
 
       - run: npm ci
 
       - name: Publish scoped package to GitHub Packages
         env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
           GITHUB_PKG_NAME: ${{ needs.resolve-version.outputs.github_pkg_name }}
         run: |
           set -euo pipefail
           cp package.json package.json.ci-backup
           npm pkg set "name=${GITHUB_PKG_NAME}"
           npm pkg set publishConfig.registry=https://npm.pkg.github.com
-          npm publish --registry https://npm.pkg.github.com
+          npmrc="${RUNNER_TEMP}/npmrc-github-publish"
+          printf '%s\n' "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > "${npmrc}"
+          npm publish --registry https://npm.pkg.github.com --userconfig "${npmrc}"
           mv package.json.ci-backup package.json

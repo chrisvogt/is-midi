@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.2] - 2026-04-10
+
+### Fixed
+
+- GitHub Actions: GitHub Packages publish job now uses a dedicated npm `--userconfig` for auth and leaves `setup-node` on the default registry for `npm ci`, avoiding `ENEEDAUTH` to `npm.pkg.github.com`.
+- GitHub Actions: npm registry publish continues to use OIDC trusted publishing with `npm@latest` so the CLI meets the npm 11.5.1+ OIDC requirement.
+
+### Changed
+
+- `repository.url` in `package.json` uses `https://github.com/chrisvogt/is-midi.git` for npm trusted publishing validation.
+
 ## [2.1.1] - 2026-04-09
 
 ### Fixed

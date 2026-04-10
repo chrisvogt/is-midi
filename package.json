@@ -1,11 +1,11 @@
 {
   "name": "is-midi",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Check if a Buffer/Uint8Array is a MIDI file (supports standard MIDI and RIFF MIDI/.rmi)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chrisvogt/is-midi.git"
+    "url": "https://github.com/chrisvogt/is-midi.git"
   },
   "author": {
     "name": "Chris Vogt",
