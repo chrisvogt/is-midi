@@ -1,6 +1,6 @@
 {
   "name": "is-midi",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Check if a Buffer/Uint8Array is a MIDI file (supports standard MIDI and RIFF MIDI/.rmi)",
   "license": "MIT",
   "repository": {
@@ -63,6 +63,9 @@
     }
   },
   "c8": {
-    "reporter": ["text", "lcov"]
+    "reporter": [
+      "text",
+      "lcov"
+    ]
   }
 }
