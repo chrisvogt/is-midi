@@ -26,8 +26,7 @@ async function readStdinPrefix(maxBytes) {
 	let total = 0;
 
 	for await (const chunk of process.stdin) {
-		/** @type {Buffer} */
-		const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+		const buf = Buffer.from(chunk);
 		chunks.push(buf);
 		total += buf.length;
 		if (total >= maxBytes) {
@@ -125,8 +124,7 @@ const ok = check(prefix);
 
 if (args.print) {
 	if (ok) {
-		const sniffed = sniffMidi(prefix);
-		process.stdout.write(`${sniffed ? sniffed.format : 'no'}\n`);
+		process.stdout.write(`${sniffMidi(prefix).format}\n`);
 	} else {
 		process.stdout.write('no\n');
 	}

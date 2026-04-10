@@ -1,4 +1,4 @@
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawnSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -236,6 +236,33 @@ test('isMidiHeaderPlausible rejects oversized RIFF payload', t => {
 	t.false(isMidiHeaderPlausible(buf));
 });
 
+test('isMidiHeaderPlausible returns false when prefix is not MIDI', t => {
+	t.false(isMidiHeaderPlausible(undefined));
+	t.false(isMidiHeaderPlausible(readChunk('fixture.txt')));
+});
+
+test('isMidiHeaderPlausible rejects SMF with zero tracks', t => {
+	const buf = new Uint8Array(14);
+	buf.set([
+		0x4D,
+		0x54,
+		0x68,
+		0x64,
+		0x00,
+		0x00,
+		0x00,
+		0x06,
+		0x00,
+		0x01,
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+	]);
+	t.true(isMidi(buf));
+	t.false(isMidiHeaderPlausible(buf));
+});
+
 test('CLI exits 0 for fixture.mid', t => {
 	execFileSync(process.execPath, [cliJs, path.join(dirname, 'fixture.mid')], {stdio: 'ignore'});
 	t.pass();
@@ -259,4 +286,45 @@ test('CLI --plausible exits 0 for fixtures', t => {
 	execFileSync(process.execPath, [cliJs, '--plausible', path.join(dirname, 'fixture.mid')], {stdio: 'ignore'});
 	execFileSync(process.execPath, [cliJs, '--plausible', path.join(dirname, 'fixture.rmi')], {stdio: 'ignore'});
 	t.pass();
+});
+
+test('CLI --help and -h exit 0 and print usage', t => {
+	for (const flag of ['--help', '-h']) {
+		const result = spawnSync(process.execPath, [cliJs, flag], {encoding: 'utf8'});
+		t.is(result.status, 0);
+		t.true((result.stderr ?? '').includes('Usage:'));
+	}
+});
+
+test('CLI exits 2 for unknown option or too many arguments', t => {
+	let result = spawnSync(process.execPath, [cliJs, '--not-an-option'], {encoding: 'utf8'});
+	t.is(result.status, 2);
+	t.true((result.stderr ?? '').includes('Unknown option:'));
+
+	result = spawnSync(process.execPath, [cliJs, 'fixture.mid', 'fixture.rmi'], {
+		cwd: dirname,
+		encoding: 'utf8',
+	});
+	t.is(result.status, 2);
+	t.true((result.stderr ?? '').includes('Too many arguments'));
+});
+
+test('CLI reads from stdin when no file path is given', t => {
+	const fixturePath = path.join(dirname, 'fixture.mid');
+	const input = readFileSync(fixturePath).subarray(0, 20);
+	const result = spawnSync(process.execPath, [cliJs, '--print'], {
+		cwd: dirname,
+		input,
+		encoding: 'utf8',
+	});
+	t.is(result.status, 0);
+	t.is((result.stdout ?? '').trimEnd(), 'smf');
+});
+
+test('CLI --print writes no when file is not MIDI', t => {
+	const result = spawnSync(process.execPath, [cliJs, '--print', path.join(dirname, 'fixture.txt')], {
+		encoding: 'utf8',
+	});
+	t.is(result.status, 1);
+	t.is((result.stdout ?? '').trimEnd(), 'no');
 });
